@@ -358,7 +358,8 @@ impl Builder {
                 println!("cargo:rerun-if-changed={}", p.display());
                 let mut output = p.clone();
                 output.set_extension("ptx");
-                let output_filename = std::path::Path::new(&out_dir).to_path_buf().join("out").with_file_name(output.file_name().expect("kernel to have a filename"));
+                // Use full output path instead of --output-directory to avoid PPU nvcc bug
+                let output_filename = out_dir.join(output.file_name().expect("kernel to have a filename"));
 
                 let ignore = if let Ok(metadata) = output_filename.metadata() {
                     let out_modified = metadata.modified().expect("modified to be accessible");
@@ -374,7 +375,7 @@ impl Builder {
                     command.arg(format!("--gpu-architecture=sm_{compute_cap}"))
                         .arg("--ptx")
                         .args(["--default-stream", "per-thread"])
-                        .args(["--output-directory", &out_dir.display().to_string()])
+                        .args(["-o", &output_filename.display().to_string()])
                         .args(&self.extra_args)
                         .args(&include_options);
                     if let Ok(ccbin_path) = &ccbin_env {
@@ -383,7 +384,6 @@ impl Builder {
                             .args(["-ccbin", ccbin_path]);
                     }
                     command.arg(p);
-                    println!("cargo:warning=nvcc command: {:?}", command);
                     Some((p, format!("{command:?}"), command.spawn()
                         .expect("nvcc failed to start. Ensure that you have CUDA installed and that `nvcc` is in your PATH.").wait_with_output()))
                 }
@@ -467,7 +467,8 @@ impl Builder {
                 println!("cargo:rerun-if-changed={}", p.display());
                 let mut output = p.clone();
                 output.set_extension("cubin");
-                let output_filename = std::path::Path::new(&out_dir).to_path_buf().join("out").with_file_name(output.file_name().expect("kernel to have a filename"));
+                // Use full output path instead of --output-directory to avoid PPU nvcc bug
+                let output_filename = out_dir.join(output.file_name().expect("kernel to have a filename"));
 
                 let ignore = if let Ok(metadata) = output_filename.metadata() {
                     let out_modified = metadata.modified().expect("modified to be accessible");
@@ -483,7 +484,7 @@ impl Builder {
                     command.arg(format!("--gpu-architecture=sm_{compute_cap}"))
                         .arg("--cubin")
                         .args(["--default-stream", "per-thread"])
-                        .args(["--output-directory", &out_dir.display().to_string()])
+                        .args(["-o", &output_filename.display().to_string()])
                         .args(&self.extra_args)
                         .args(&include_options);
                     if let Ok(ccbin_path) = &ccbin_env {
@@ -492,7 +493,6 @@ impl Builder {
                             .args(["-ccbin", ccbin_path]);
                     }
                     command.arg(p);
-                    println!("cargo:warning=nvcc command: {:?}", command);
                     Some((p, format!("{command:?}"), command.spawn()
                         .expect("nvcc failed to start. Ensure that you have CUDA installed and that `nvcc` is in your PATH.").wait_with_output()))
                 }
